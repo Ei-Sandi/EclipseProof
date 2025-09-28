@@ -15,11 +15,13 @@ This integrated application consists of:
 
 ## 🚀 Quick Start Guide
 
-### Prerequisites
+> ⚡ **Quick Note**: First-time setup takes 3-6 minutes due to zero-knowledge circuit compilation. Subsequent starts are much faster!
 
-- Node.js 18+
+### Prerequisites
+- Node.js 18+ 
 - npm 10+
 - Docker (for proof server)
+- [Compact Tools](https://docs.midnight.network/relnotes/compact-tools) (Midnight developer tools)
 
 ### Installation and Setup
 
@@ -28,6 +30,7 @@ This integrated application consists of:
    ```bash
    git clone <repository-url>
    cd EclipseProof
+   npm install
    npm run setup
    ```
 
@@ -38,6 +41,16 @@ This integrated application consists of:
    npm run start-app
    ```
 
+   **⏱️ Important:** The first startup takes **3-6 minutes** due to:
+   - Contract compilation (16 zero-knowledge circuits)
+   - Provider initialization
+   - Blockchain connection setup
+   
+   **Wait for this message before testing:**
+   ```
+   [INFO] EclipseProof API server running on port 3001
+   ```
+
    **OR for full testnet integration:**
 
    ```bash
@@ -45,12 +58,99 @@ This integrated application consists of:
    npm run start-app-testnet
    ```
 
+   **⚠️ If compilation fails with zkir errors, try:**
+   ```bash
+   npm run start-app:simple
+   ```
+
 3. **Access the Application**
    - Frontend: http://localhost:5173
    - Backend API: http://localhost:3001
    - API Health Check: http://localhost:3001/health
 
-## 🙏 Acknowledgments
+4. **Verify Everything is Working**
+   ```bash
+   # Test backend health
+   curl http://localhost:3001/health
+   
+   # Test proof generation
+   curl -X POST \
+     -H "Content-Type: application/json" \
+     -d '{
+       "name": "Test User",
+       "dateOfBirth": "1990-01-01", 
+       "payslipJson": "{\"netPay\":3500,\"grossPay\":4200}",
+       "amountToProve": 3000
+     }' \
+     http://localhost:3001/api/proof/generate-from-json
+   ```
+
+## � Troubleshooting
+
+### Common Issues
+
+**❌ "Failed to fetch" Error**
+- **Cause**: Backend not fully started yet
+- **Solution**: Wait for the log message `"EclipseProof API server running on port 3001"`
+- **Time**: Initial startup takes 3-6 minutes for contract compilation
+
+**❌ "zkir returned a non-zero exit status -2"**
+- **Cause**: Contract compilation failed
+- **Solution**: Use simple mode: `npm run start-app:simple`
+- **Alternative**: Restart the compilation process
+
+**❌ "Could not connect to server"**
+- **Cause**: Backend process stopped or didn't start
+- **Solution**: Check if port 3001 is available: `ss -tlnp | grep :3001`
+- **Fix**: Restart with `npm run start-app`
+
+**❌ Wallet Connection Issues**
+- **Cause**: Midnight Lace wallet not properly connected
+- **Solution**: Click "Connect Wallet" button in the UI
+- **Requirements**: Chrome 119+ with Midnight Lace extension
+
+### Performance Notes
+
+- **First startup**: 3-6 minutes (contract compilation)
+- **Subsequent starts**: 30-60 seconds (cached contracts)
+- **Proof generation**: 1-3 seconds
+- **Proof verification**: <1 second
+
+### API Testing
+
+Use these commands to test your backend directly:
+
+```bash
+# Health check
+curl http://localhost:3001/health
+
+# Contract status
+curl http://localhost:3001/api/contract/status
+
+# Generate proof
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Alice Smith",
+    "dateOfBirth": "1985-03-22",
+    "payslipJson": "{\"netPay\":4500,\"grossPay\":5200}",
+    "amountToProve": 4000
+  }' \
+  http://localhost:3001/api/proof/generate-from-json
+
+# Verify proof (replace with actual proofKey from generation)
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -d '{
+    "proofKey": "PROOF_HASH_FROM_GENERATION",
+    "verifierName": "Alice Smith",
+    "verifierDateOfBirth": "1985-03-22",
+    "requiredAmount": 3500
+  }' \
+  http://localhost:3001/api/proof/verify
+```
+
+## �🙏 Acknowledgments
 
 - **MLH (Major League Hacking)**: For organizing the Midnight Hackathon
 - **Midnight Network**: For providing privacy-focused blockchain infrastructure
@@ -141,40 +241,36 @@ Imagine you want to get into a club that only allows people over 21:
 - Docker (for local development)
 - [Compact Tools](https://docs.midnight.network/relnotes/compact-tools) (Midnight developer tools)
 
-### Quick Start
-
-```bash
-# Clone the repository
-git clone https://github.com/Utpal-Kalita/EclipseProof.git
-cd EclipseProof
-
-# Install dependencies
-npm install
-
-# Build all packages
-npm run build
-
-# Start the development server
-npm run dev:frontend
-
-# Open your browser
-# Navigate to http://localhost:5173
-```
-
 ### Project Structure
 
 ```
 EclipseProof/
+├── eclipseproof-cli/             # Backend API server (Express.js)
+│   ├── src/
+│   │   ├── server.ts            # Main API server
+│   │   ├── api.ts               # API endpoints & blockchain integration
+│   │   ├── config.ts            # Provider configuration
+│   │   ├── contract-types.ts    # Smart contract type definitions
+│   │   └── test/                # API tests
+│   ├── package.json
+│   └── proof-server*.yml        # Docker compose configs
+├── eclipseproof-contract/        # Smart contract (Compact language)
+│   ├── src/
+│   │   ├── eclipseproof.compact # Main contract code
+│   │   ├── witnesses.ts         # Contract witnesses
+│   │   └── managed/             # Compiled contract artifacts
+│   └── package.json
 ├── frontend-vite-react/          # React web application
 │   ├── src/
-│   │   ├── components/           # Reusable UI components
-│   │   ├── pages/               # Application pages
-│   │   ├── services/            # Business logic & API calls
+│   │   ├── components/          # Reusable UI components
+│   │   ├── pages/               # Application pages (home, wallet-ui)
+│   │   ├── services/            # IncomeVerificationService
 │   │   ├── types/               # TypeScript interfaces
 │   │   └── App.tsx              # Main application component
-├── counter-contract/             # Smart contract (Compact language)
-├── counter-cli/                 # Command-line interface
-├── bulletin-board/              # Additional contract examples
+│   ├── public/                  # Static assets & contract artifacts
+│   └── package.json
+├── package.json                  # Root package.json (workspaces)
+├── turbo.json                   # Turborepo configuration
 └── README.md                    # This file
 ```
 
