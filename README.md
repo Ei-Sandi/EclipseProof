@@ -1,6 +1,8 @@
 # 🔐 EclipseProof - Integrated Full Stack Application
 
-> 🏆 **Built for MLH Midnight Hackathon 2025**
+> 🏆 **Built for MLH Midnight Hackathon 2025 - Proof of concept**
+>
+> Our full-fledge app - under development - https://github.com/Ei-Sandi/EclipseProof-Pro 
 
 **Privacy-Preserving Income Verification Using Zero-Knowledge Proofs**
 
